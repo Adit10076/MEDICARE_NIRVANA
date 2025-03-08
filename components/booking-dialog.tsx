@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Hospital } from '@/types/hospital';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, User, MapPin } from 'lucide-react';
+import { Calendar, Clock, User, MapPin, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -18,10 +18,12 @@ export function BookingDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [location, setLocation] = useState('');
   const [error, setError] = useState('');
 
+  // Automatically detect user's location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -60,6 +62,7 @@ export function BookingDialog({
           </DialogHeader>
 
           <div className="space-y-6 py-4">
+            {/* Hospital Information */}
             <div className="flex items-center gap-4">
               <div className="p-3 bg-sky-100 rounded-xl">
                 <User className="text-sky-600" size={24} />
@@ -70,7 +73,9 @@ export function BookingDialog({
               </div>
             </div>
 
+            {/* User Information Fields */}
             <div className="space-y-4">
+              {/* Name Field */}
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <User className="text-sky-600" size={20} />
                 <input
@@ -83,6 +88,20 @@ export function BookingDialog({
                 />
               </div>
 
+              {/* Phone Number Field */}
+              <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
+                <Phone className="text-sky-600" size={20} />
+                <input
+                  type="tel"
+                  aria-label="Your Phone Number"
+                  placeholder="Your Phone Number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="bg-transparent font-medium focus:outline-none w-full"
+                />
+              </div>
+
+              {/* Location Field (Auto-detected) */}
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <MapPin className="text-sky-600" size={20} />
                 <input
@@ -95,6 +114,7 @@ export function BookingDialog({
                 />
               </div>
 
+              {/* Symptoms Field */}
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <User className="text-sky-600" size={20} />
                 <textarea
@@ -106,6 +126,7 @@ export function BookingDialog({
                 />
               </div>
 
+              {/* Appointment Date Field */}
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <Calendar className="text-sky-600" size={20} />
                 <input
@@ -115,6 +136,7 @@ export function BookingDialog({
                 />
               </div>
 
+              {/* Appointment Time Field */}
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <Clock className="text-sky-600" size={20} />
                 <select
@@ -127,7 +149,11 @@ export function BookingDialog({
                 </select>
               </div>
             </div>
+
+            {/* Error Message */}
             {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            {/* Confirm Appointment Button */}
             <Link href="/stripepayment">
               <Button
                 size="lg"
