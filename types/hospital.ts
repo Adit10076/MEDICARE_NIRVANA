@@ -10,16 +10,16 @@ export interface Doctor {
 export interface Hospital {
   id: number;
   name: string;
-  location: string;
+  address: string;
   consultationFee: string;
   rating: string;
   experience?: string;
   waitTime: string;
   contact: string;
-  ambulances: number;
+  ambulance: number;
   blood: number;
   oxygen: number;
-  icu: number;
+  beds: number;
   latitude: number;
   longitude: number;
   specialities: string[];
@@ -36,6 +36,8 @@ export interface BookingData {
   name: string;
   phone: string;
   reason: string;
+  latitude:any,
+  longitude:any
 }
 
 declare module "next-auth" {
