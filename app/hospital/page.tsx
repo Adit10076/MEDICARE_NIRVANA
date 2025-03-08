@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import AuthNavbar from "@/components/AuthNavbar";
 import { Button } from "@/components/ui/button";
 import { Search, X, MapPin, List } from "lucide-react";
-import { hospitals as allHospitals } from "@/data/hospital";
 import Link from "next/link";
+import { Hospital } from "@/types/hospital";
 
 // Dynamically import MapView with SSR disabled
 const MapView = dynamic(() => import("@/components/map-view"), { 
@@ -17,14 +17,37 @@ const MapView = dynamic(() => import("@/components/map-view"), {
   loading: () => <div className="h-[calc(100vh-180px)] flex items-center justify-center">Loading map...</div>
 });
 
+
+
 export default function HospitalPage() {
   const [mapMode, setMapMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [allHospitals,setAllHospitals] = useState<Hospital[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
+useEffect(() => {
+  const fetchHospitals = async () => {
+    try {
+      const response = await fetch('/api/hospital')
+      if (!response.ok) throw new Error('Failed to fetch')
+      const data = await response.json()
+      setAllHospitals(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  fetchHospitals()
+}, []);
+
   // Filter hospitals based on search query
   const filteredHospitals = allHospitals.filter((hospital) =>
     hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    hospital.location.toLowerCase().includes(searchQuery.toLowerCase())
+    hospital.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
