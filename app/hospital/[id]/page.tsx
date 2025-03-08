@@ -3,14 +3,35 @@
 import { motion } from 'framer-motion';
 import { useParams } from 'next/navigation';
 import { Hospital } from '@/types/hospital';
-import { hospitals } from '../../../data/hospital';
 import { BookingDialog } from '../../../components/booking-dialog';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Star, Clock, MapPin, User, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function HospitalDetailsPage() {
+
+  const [hospitals,setHospitals] = useState<Hospital[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        const response = await fetch('/api/hospital')
+        if (!response.ok) throw new Error('Failed to fetch')
+        const data = await response.json()
+        setHospitals(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setLoading(false)
+      }
+    }
+  
+    fetchHospitals()
+  }, []);
+
   const params = useParams();
   const id = parseInt(params.id as string);
   const hospital = hospitals.find(h => h.id === id);
@@ -44,14 +65,14 @@ export default function HospitalDetailsPage() {
                   {hospital.name}
                 </h1>
                 <p className="text-lg text-gray-600 flex items-center gap-2">
-                  <MapPin className="text-sky-600" /> {hospital.location}
+                  <MapPin className="text-sky-600" /> {hospital.address}
                 </p>
                 <div className="flex gap-2 mt-4">
                   <span className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-sm">
                     {hospital.experience} Experience
                   </span>
                   <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">
-                    {hospital.rating} Rating
+                    4.2 Rating
                   </span>
                 </div>
               </motion.div>
@@ -84,7 +105,7 @@ export default function HospitalDetailsPage() {
                   About {hospital.name}
                 </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  {hospital.about}
+                A multi-specialty hospital providing quality healthcare services.
                 </p>
               </motion.section>
 
@@ -108,10 +129,10 @@ export default function HospitalDetailsPage() {
                         </div>
                         <div>
                           <h4 className="font-semibold text-lg">{doctor.name}</h4>
-                          <p className="text-gray-600">{doctor.specialty}</p>
-                          <p className="text-sm text-gray-500 mt-1">
+                          <p className="text-gray-600">{doctor.specialization}</p>
+                          {/* <p className="text-sm text-gray-500 mt-1">
                             {doctor.experience} experience
-                          </p>
+                          </p> */}
                         </div>
                       </div>
                     </div>
