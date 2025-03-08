@@ -3,8 +3,10 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Hospital } from '@/types/hospital';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, User } from 'lucide-react';
+import { Calendar, Clock, User, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export function BookingDialog({
   hospital,
@@ -15,6 +17,35 @@ export function BookingDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [name, setName] = useState('');
+  const [symptoms, setSymptoms] = useState('');
+  const [location, setLocation] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // Use a reverse geocoding API to get the location name
+          fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+            .then(response => response.json())
+            .then(data => {
+              setLocation(`${data.locality}, ${data.countryName}`);
+            })
+            .catch(() => {
+              setError('Unable to fetch location details.');
+            });
+        },
+        () => {
+          setError('Unable to retrieve your location.');
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by this browser.');
+    }
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
@@ -41,8 +72,42 @@ export function BookingDialog({
 
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
+                <User className="text-sky-600" size={20} />
+                <input
+                  type="text"
+                  aria-label="Your Name"
+                  placeholder="Your Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-transparent font-medium focus:outline-none w-full"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
+                <MapPin className="text-sky-600" size={20} />
+                <input
+                  type="text"
+                  aria-label="Your Location"
+                  placeholder="Your Location"
+                  value={location}
+                  readOnly
+                  className="bg-transparent font-medium focus:outline-none w-full"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
+                <User className="text-sky-600" size={20} />
+                <textarea
+                  aria-label="Symptoms"
+                  placeholder="Describe your symptoms"
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  className="bg-transparent font-medium focus:outline-none w-full"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <Calendar className="text-sky-600" size={20} />
-                {/* Accessible date input */}
                 <input
                   type="date"
                   aria-label="Appointment Date"
@@ -52,7 +117,6 @@ export function BookingDialog({
 
               <div className="flex items-center gap-3 p-4 bg-sky-50 rounded-xl">
                 <Clock className="text-sky-600" size={20} />
-                {/* Accessible select dropdown */}
                 <select
                   aria-label="Select Appointment Time"
                   className="bg-transparent font-medium focus:outline-none w-full"
@@ -63,14 +127,14 @@ export function BookingDialog({
                 </select>
               </div>
             </div>
-
+            {error && <p className="text-red-500 text-sm">{error}</p>}
             <Link href="/stripepayment">
-            <Button
-              size="lg"
-              className="w-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white py-6 text-lg"
-            >
-              Confirm Appointment
-            </Button>
+              <Button
+                size="lg"
+                className="w-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white py-6 text-lg"
+              >
+                Confirm Appointment
+              </Button>
             </Link>
           </div>
         </motion.div>
