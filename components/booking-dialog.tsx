@@ -64,12 +64,14 @@ export function BookingDialog({
               </div>
             </div>
 
+            <Link href="/stripepayment">
             <Button
               size="lg"
               className="w-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white py-6 text-lg"
             >
               Confirm Appointment
             </Button>
+            </Link>
           </div>
         </motion.div>
       </DialogContent>
