@@ -32,7 +32,7 @@ export default function HospitalCard({ hospital }: { hospital: Hospital }) {
                 )}
               </div>
               <p className="text-gray-500 flex items-center gap-1 mt-1">
-                <MapPin size={16} /> {hospital.location}
+                <MapPin size={16} /> {hospital.address}
               </p>
             </div>
             <div className="flex gap-2">
@@ -51,13 +51,13 @@ export default function HospitalCard({ hospital }: { hospital: Hospital }) {
               <p className="text-gray-500 text-sm flex items-center gap-1">
                 <Star size={16} className="text-amber-400" /> Rating
               </p>
-              <p className="font-semibold text-gray-900">{hospital.rating}</p>
+              <p className="font-semibold text-gray-900">4.2</p>
             </div>
             <div className="bg-sky-50 p-3 rounded-lg">
               <p className="text-gray-500 text-sm flex items-center gap-1">
                 <Clock size={16} className="text-sky-500" /> Wait Time
               </p>
-              <p className="font-semibold text-gray-900">{hospital.waitTime}</p>
+              <p className="font-semibold text-gray-900">30 mins</p>
             </div>
           </div>
 
@@ -81,7 +81,8 @@ export default function HospitalCard({ hospital }: { hospital: Hospital }) {
             <div>
               <p className="text-gray-500 text-sm">Consultation Fee</p>
               <p className="text-lg font-semibold text-gray-900">
-                {hospital.consultationFee}
+                
+              <span>&#8377; 500</span>
               </p>
             </div>
             <Link href={`/hospital/${hospital.id}`} passHref>
