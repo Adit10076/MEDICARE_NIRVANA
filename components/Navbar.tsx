@@ -24,7 +24,7 @@ export default function Navbar() {
       ]
     },
     { name: 'Hospitals', href: '/hospital' },
-    { name: 'About', href: '/about' },
+    { name: 'Community', href: '/patient/community' },
     { name: 'Contact', href: '/contact' },
   ];
 

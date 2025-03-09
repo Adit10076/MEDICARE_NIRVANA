@@ -24,7 +24,6 @@ import {
 import { signIn, signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// ## Interfaces
 interface BedData {
   ICU: number;
   General: number;
@@ -89,8 +88,6 @@ interface Appointment {
   location: string;
 }
 
-// ## Reusable Components
-
 const Modal = ({
   children,
   onClose,
@@ -110,7 +107,6 @@ const Modal = ({
     </div>
   </div>
 );
-
 
 const RadialProgress = ({
   percent,
@@ -157,8 +153,13 @@ const RadialProgress = ({
   </div>
 );
 
-
-const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
+const AppointmentCard = ({ 
+  appointment,
+  onDelete 
+}: { 
+  appointment: Appointment;
+  onDelete: (id: number) => void;
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -227,6 +228,21 @@ const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
                   <p className="text-gray-500 text-sm">{appointment.phone}</p>
                 </div>
               </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => onDelete(appointment.id)}
+                  className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                >
+                  Done
+                </button>
+                <button
+                  onClick={() => onDelete(appointment.id)}
+                  className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                >
+                  Denied
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -235,7 +251,6 @@ const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
   );
 };
 
-// ## Sidebar Component
 const Sidebar = ({
   isCollapsed,
   toggleSidebar,
@@ -262,7 +277,6 @@ const Sidebar = ({
   const [activeModal, setActiveModal] = useState<
     "beds" | "blood" | "oxygen" | "ambulance" | "settings" | null
   >(null);
-
   const session = useSession();
 
   const updateResource = async (
@@ -282,11 +296,7 @@ const Sidebar = ({
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to update ${endpoint}`);
-      }
-      console.log(response);
-
+      if (!response.ok) throw new Error(`Failed to update ${endpoint}`);
       return await response.json();
     } catch (error) {
       console.error(`Error updating ${endpoint}:`, error);
@@ -295,11 +305,9 @@ const Sidebar = ({
   };
 
   return (
-    <div
-      className={`bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-200 h-screen fixed left-0 top-0 transition-all duration-300 ${
+    <div className={`bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-200 h-screen fixed left-0 top-0 transition-all duration-300 ${
         isCollapsed ? "w-20" : "w-64"
-      }`}
-    >
+      }`}>
       <div className="p-4 border-b border-gray-200 flex items-center gap-3">
         <Link href="/">
           <Image
@@ -383,7 +391,6 @@ const Sidebar = ({
         </div>
       </nav>
 
-      {/* Modals */}
       {activeModal === "settings" && (
         <Modal onClose={() => setActiveModal(null)}>
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -529,30 +536,9 @@ const Sidebar = ({
   );
 };
 
-// ## Main Dashboard Component
 export default function HospitalDashboard() {
   const { data: session, status } = useSession();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
-      signIn();
-    } else {
-      // Fetch appointments
-      fetch(`/api/hospital/${session.user.id}/appointments`)
-        .then((res) => res.json())
-        .then((data) => setAppointments(data))
-        .catch(console.error);
-      fetchData("beds", setBedData);
-      fetchData("blood", setBloodData);
-      fetchData("oxygen", setOxygenData);
-      fetchData("ambulance", setAmbulanceData);
-      fetchData("doctors", setDoctors);
-    }
-  }, [session, status]);
-
-  // ### State Declarations
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [bedData, setBedData] = useState<BedData>({
     ICU: 0,
@@ -580,18 +566,15 @@ export default function HospitalDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
-
   const [stats] = useState<Stat>({
     satisfaction: 92,
     recoveryRate: 85,
     emergencyResponse: 76,
   });
-
   const [emergencyAlerts] = useState<EmergencyAlert[]>([
     { id: 1, type: "Code Blue", location: "ER Room 3", time: "2 mins ago" },
     { id: 2, type: "Equipment Alert", location: "MRI Machine #2", time: "15 mins ago" },
   ]);
-
   const [announcements] = useState<Announcement[]>([
     {
       id: 1,
@@ -607,7 +590,23 @@ export default function HospitalDashboard() {
     },
   ]);
 
-  // ### Fetch Data Function
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      signIn();
+    } else {
+      fetch(`/api/hospital/${session.user.id}/appointments`)
+        .then((res) => res.json())
+        .then((data) => setAppointments(data))
+        .catch(console.error);
+      fetchData("beds", setBedData);
+      fetchData("blood", setBloodData);
+      fetchData("oxygen", setOxygenData);
+      fetchData("ambulance", setAmbulanceData);
+      fetchData("doctors", setDoctors);
+    }
+  }, [session, status]);
+
   const fetchData = async (endpoint: string, setData: (data: any) => void) => {
     try {
       const hospitalId = session?.user?.id;
@@ -631,7 +630,28 @@ export default function HospitalDashboard() {
     }
   };
 
-  // ### Doctor Management Handlers
+  const handleDeleteAppointment = async (appointmentId: number) => {
+    try {
+      const hospitalId = session?.user?.id;
+      if (!hospitalId) throw new Error("Hospital ID not found");
+
+      const response = await fetch(
+        `/api/hospital/${hospitalId}/appointments/${appointmentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to delete appointment");
+      setAppointments(appointments.filter((a) => a.id !== appointmentId));
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+    }
+  };
+
   const handleDeleteDoctor = async (id: number) => {
     try {
       const hospitalId = session?.user?.id;
@@ -645,11 +665,7 @@ export default function HospitalDashboard() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete doctor");
-      }
-
+      if (!response.ok) throw new Error("Failed to delete doctor");
       setDoctors(doctors.filter((doc) => doc.id !== id));
     } catch (error) {
       console.error("Error deleting doctor:", error);
@@ -672,11 +688,7 @@ export default function HospitalDashboard() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update doctor");
-      }
-
+      if (!response.ok) throw new Error("Failed to update doctor");
       const data = await response.json();
       setDoctors(doctors.map((doc) => (doc.id === data.id ? data : doc)));
       setEditingDoctor(null);
@@ -703,11 +715,7 @@ export default function HospitalDashboard() {
           }),
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to add doctor");
-        }
-
+        if (!response.ok) throw new Error("Failed to add doctor");
         const newDoctor = await response.json();
         setDoctors([...doctors, newDoctor]);
       } else {
@@ -719,7 +727,6 @@ export default function HospitalDashboard() {
     }
   };
 
-  // ### JSX Structure
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900">
       <Sidebar
@@ -735,17 +742,10 @@ export default function HospitalDashboard() {
         setAmbulanceData={setAmbulanceData}
       />
 
-      <main
-        className={`transition-all duration-300 ${
-          isCollapsed ? "ml-20" : "ml-64"
-        } pt-20 p-8`}
-      >
+      <main className={`transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"} pt-20 p-8`}>
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-gray-800">
-            Hospital Command Center
-          </h1>
+          <h1 className="text-3xl font-bold mb-8 text-gray-800">Hospital Command Center</h1>
 
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-2xl shadow-sm border border-blue-200">
               <div className="flex items-center gap-3">
@@ -804,7 +804,6 @@ export default function HospitalDashboard() {
             </div>
           </div>
 
-          {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-3 mb-5">
@@ -836,6 +835,7 @@ export default function HospitalDashboard() {
                   <AppointmentCard
                     key={appointment.id}
                     appointment={appointment}
+                    onDelete={handleDeleteAppointment}
                   />
                 ))}
               </div>
@@ -890,7 +890,6 @@ export default function HospitalDashboard() {
               </div>
             </div>
 
-            {/* Doctors Section */}
             <div
               className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 cursor-pointer"
               onClick={() => setIsModalOpen(true)}
@@ -920,7 +919,6 @@ export default function HospitalDashboard() {
         </div>
       </main>
 
-      {/* Modal for Managing Doctors */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -1005,7 +1003,6 @@ export default function HospitalDashboard() {
               </div>
             )}
 
-            {/* Doctors List */}
             <div className="space-y-4">
               {doctors
                 .filter((doctor) =>
