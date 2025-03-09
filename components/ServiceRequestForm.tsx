@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Hospital } from "@/types/hospital";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function ServiceRequestForm({
@@ -31,9 +32,11 @@ export default function ServiceRequestForm({
           className="border rounded-lg p-2 w-20"
           placeholder="Quantity"
         />
+        <Link href={`/confirm-request?service=${service}&quantity=${quantity}&providerName=${provider.name}`}>
         <Button className="bg-sky-600 hover:bg-sky-700">
           Confirm Request
         </Button>
+        </Link>
       </div>
     </div>
   );
