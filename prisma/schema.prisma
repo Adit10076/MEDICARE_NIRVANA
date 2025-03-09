@@ -10,7 +10,7 @@ datasource db {
 model User {
   id             Int            @id @default(autoincrement())
   email          String         @unique
-alert          String[]        @default([])
+  alert          String[]        @default([])
   password       String
   name           String
   profile        Profile?
@@ -30,16 +30,17 @@ model Profile {
 }
 
 model MedicalProfile {
-  id              Int             @id @default(autoincrement())
-  bloodType       String          @default("") // Default to empty string
-  allergies       String[]        @default([]) // Default to empty array
-  medications     String[]        @default([]) // Default to empty array
-  conditions      String[]        @default([]) // Default to empty array
-  vaccinations    String[]        @default([]) // Default to empty array
-  lastCheckup     DateTime        @default(now()) // Default to current time
-  favoriteDoctors FavoriteDoctor[]
-  userId          Int             @unique
-  user            User            @relation(fields: [userId], references: [id])
+  id                Int              @id @default(autoincrement())
+  bloodType         String           @default("")
+  allergies         String[]         @default([])
+  medications       String[]         @default([])
+  conditions        String[]         @default([])
+  vaccinations      String[]         @default([])
+  lastCheckup       DateTime         @default(now())
+  care_instructions String[]         @default([])
+  favoriteDoctors   FavoriteDoctor[]
+  userId            Int              @unique @map("user_id") @default(1) // Temporary default
+  user              User             @relation(fields: [userId], references: [id])
 }
 
 model FavoriteDoctor {
@@ -160,7 +161,7 @@ model Appointment {
   alert      String[] @default([])  // Whether the appointment is urgent
   hospitalId Int       // Foreign key to the Hospital model
   hospital   Hospital  @relation(fields: [hospitalId], references: [id])
-// Relationship to User
+// Relationship to User
 }
 
 model Stats {
