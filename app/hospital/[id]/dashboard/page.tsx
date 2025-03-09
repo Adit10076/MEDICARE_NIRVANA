@@ -16,11 +16,15 @@ import {
   Clock,
   CalendarClock,
   Bell,
-  LogOut
+  LogOut,
+  MapPin,
+  Calendar,
+  Phone,
 } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// Define interfaces for state data
+// ## Interfaces
 interface BedData {
   ICU: number;
   General: number;
@@ -46,6 +50,7 @@ interface AmbulanceData {
   "In Operation": number;
   "Under Maintenance": number;
 }
+
 interface Doctor {
   id: number;
   name: string;
@@ -77,11 +82,15 @@ interface Announcement {
 interface Appointment {
   id: number;
   patient: string;
+  phone: string;
+  symptoms: string;
+  date: string;
   time: string;
-  department: string;
+  location: string;
 }
 
-// Reusable Modal Component
+// ## Reusable Components
+
 const Modal = ({
   children,
   onClose,
@@ -102,7 +111,7 @@ const Modal = ({
   </div>
 );
 
-// Enhanced Radial Progress Component
+
 const RadialProgress = ({
   percent,
   label,
@@ -148,7 +157,85 @@ const RadialProgress = ({
   </div>
 );
 
-// Sidebar Component
+
+const AppointmentCard = ({ appointment }: { appointment: Appointment }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ height: isExpanded ? "auto" : "80px" }}
+      className="overflow-hidden"
+    >
+      <div
+        className={`p-4 bg-gray-50 rounded-xl cursor-pointer transition-colors ${
+          isExpanded ? "bg-blue-50" : "hover:bg-blue-50"
+        }`}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-gray-800">{appointment.patient}</h3>
+            <p className="text-sm text-gray-500">{appointment.time}</p>
+          </div>
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            className="text-gray-400"
+          >
+            ▼
+          </motion.div>
+        </div>
+
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-4 space-y-3 pt-4 border-t border-gray-200"
+            >
+              <div className="flex items-center gap-3">
+                <ClipboardList className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Symptoms</p>
+                  <p className="text-gray-500 text-sm">{appointment.symptoms}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <MapPin className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Location</p>
+                  <p className="text-gray-500 text-sm">{appointment.location}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-purple-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Date</p>
+                  <p className="text-gray-500 text-sm">
+                    {new Date(appointment.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-red-600" />
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Contact</p>
+                  <p className="text-gray-500 text-sm">{appointment.phone}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+};
+
+// ## Sidebar Component
 const Sidebar = ({
   isCollapsed,
   toggleSidebar,
@@ -190,7 +277,6 @@ const Sidebar = ({
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          
         },
         credentials: "include",
         body: JSON.stringify(data),
@@ -199,7 +285,7 @@ const Sidebar = ({
       if (!response.ok) {
         throw new Error(`Failed to update ${endpoint}`);
       }
-      console.log(response)
+      console.log(response);
 
       return await response.json();
     } catch (error) {
@@ -207,7 +293,6 @@ const Sidebar = ({
       throw error;
     }
   };
-
 
   return (
     <div
@@ -217,20 +302,23 @@ const Sidebar = ({
     >
       <div className="p-4 border-b border-gray-200 flex items-center gap-3">
         <Link href="/">
-      <Image src="/medicare-logo-final.svg" alt="Medicare+" width={50} height={50} className="rounded-full" />
-      </Link>
-        
+          <Image
+            src="/medicare-logo-final.svg"
+            alt="Medicare+"
+            width={50}
+            height={50}
+            className="rounded-full"
+          />
+        </Link>
         {!isCollapsed && (
           <span className="text-xl font-bold text-gray-900">
-            {session.data?.user.name
-        }
+            {session.data?.user.name}
           </span>
         )}
       </div>
 
       <nav className="p-4">
         <div className="space-y-2">
-
           <button
             onClick={() => setActiveModal("settings")}
             className={`w-full flex items-center gap-3 p-3 text-gray-700 hover:bg-blue-100/50 rounded-xl transition ${
@@ -288,11 +376,9 @@ const Sidebar = ({
                 isCollapsed ? "justify-center" : ""
               }`}
             >
-              <LogOut className="w-5 h-5 text-red-600"/>
+              <LogOut className="w-5 h-5 text-red-600" />
               {!isCollapsed && "SignOut"}
             </button>
-
-
           </div>
         </div>
       </nav>
@@ -308,14 +394,14 @@ const Sidebar = ({
               <p className="text-sm text-gray-500">Hospital Name</p>
               <input
                 className="text-2xl font-bold text-blue-600 w-full bg-transparent border-b-2 border-gray-200 focus:outline-none focus:border-blue-500"
-                defaultValue={session.data?.user.name??""}
+                defaultValue={session.data?.user.name ?? ""}
               />
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-500">Contact Number</p>
               <input
                 className="text-2xl font-bold text-blue-600 w-full bg-transparent border-b-2 border-gray-200 focus:outline-none focus:border-blue-500"
-                defaultValue={session.data?.user.phone??""}
+                defaultValue={session.data?.user.phone ?? ""}
               />
             </div>
           </div>
@@ -366,7 +452,7 @@ const Sidebar = ({
                   type="number"
                   value={units}
                   placeholder=".."
-                  onChange={(e:any) => {
+                  onChange={(e: any) => {
                     const updatedBloodData = {
                       ...bloodData,
                       [type]: parseInt(e.target.value) || 0,
@@ -424,7 +510,6 @@ const Sidebar = ({
                   type="number"
                   value={value}
                   placeholder=".."
-
                   onChange={(e) => {
                     const updatedAmbulanceData = {
                       ...ambulanceData,
@@ -444,11 +529,30 @@ const Sidebar = ({
   );
 };
 
-
+// ## Main Dashboard Component
 export default function HospitalDashboard() {
   const { data: session, status } = useSession();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
 
-  // State declarations
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      signIn();
+    } else {
+      // Fetch appointments
+      fetch(`/api/hospital/${session.user.id}/appointments`)
+        .then((res) => res.json())
+        .then((data) => setAppointments(data))
+        .catch(console.error);
+      fetchData("beds", setBedData);
+      fetchData("blood", setBloodData);
+      fetchData("oxygen", setOxygenData);
+      fetchData("ambulance", setAmbulanceData);
+      fetchData("doctors", setDoctors);
+    }
+  }, [session, status]);
+
+  // ### State Declarations
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [bedData, setBedData] = useState<BedData>({
     ICU: 0,
@@ -503,12 +607,7 @@ export default function HospitalDashboard() {
     },
   ]);
 
-  const [appointments] = useState<Appointment[]>([
-    { id: 1, patient: "Michael Brown", time: "09:30 AM", department: "Cardiology" },
-    { id: 2, patient: "Emma Wilson", time: "02:15 PM", department: "Pediatrics" },
-  ]);
-
-  // Fetch data function
+  // ### Fetch Data Function
   const fetchData = async (endpoint: string, setData: (data: any) => void) => {
     try {
       const hospitalId = session?.user?.id;
@@ -532,58 +631,59 @@ export default function HospitalDashboard() {
     }
   };
 
-  // Doctor management handlers
-  // Update handleDeleteDoctor
-const handleDeleteDoctor = async (id: number) => {
-  try {
-    const hospitalId = session?.user?.id;
-    if (!hospitalId) throw new Error("Hospital ID not found");
+  // ### Doctor Management Handlers
+  const handleDeleteDoctor = async (id: number) => {
+    try {
+      const hospitalId = session?.user?.id;
+      if (!hospitalId) throw new Error("Hospital ID not found");
 
-    const response = await fetch(`/api/hospital/${hospitalId}/doctors?id=${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-    });
+      const response = await fetch(
+        `/api/hospital/${hospitalId}/doctors?id=${id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to delete doctor");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete doctor");
+      }
+
+      setDoctors(doctors.filter((doc) => doc.id !== id));
+    } catch (error) {
+      console.error("Error deleting doctor:", error);
     }
+  };
 
-    setDoctors(doctors.filter((doc) => doc.id !== id));
-  } catch (error) {
-    console.error("Error deleting doctor:", error);
-  }
-};
+  const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
+    try {
+      const hospitalId = session?.user?.id;
+      if (!hospitalId) throw new Error("Hospital ID not found");
 
-// Update handleUpdateDoctor
-const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
-  try {
-    const hospitalId = session?.user?.id;
-    if (!hospitalId) throw new Error("Hospital ID not found");
+      const response = await fetch(`/api/hospital/${hospitalId}/doctors`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: updatedDoctor.id,
+          name: updatedDoctor.name,
+          specialization: updatedDoctor.specialization,
+          shift: updatedDoctor.shift,
+        }),
+      });
 
-    const response = await fetch(`/api/hospital/${hospitalId}/doctors`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: updatedDoctor.id,
-        name: updatedDoctor.name,
-        specialization: updatedDoctor.specialization,
-        shift: updatedDoctor.shift
-      }),
-    });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update doctor");
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to update doctor");
+      const data = await response.json();
+      setDoctors(doctors.map((doc) => (doc.id === data.id ? data : doc)));
+      setEditingDoctor(null);
+    } catch (error) {
+      console.error("Error updating doctor:", error);
     }
-
-    const data = await response.json();
-    setDoctors(doctors.map((doc) => (doc.id === data.id ? data : doc)));
-    setEditingDoctor(null);
-  } catch (error) {
-    console.error("Error updating doctor:", error);
-  }
-};
+  };
 
   const handleSaveDoctor = async () => {
     if (!editingDoctor) return;
@@ -599,7 +699,7 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
           credentials: "include",
           body: JSON.stringify({
             ...editingDoctor,
-            hospitalId: Number(hospitalId)
+            hospitalId: Number(hospitalId),
           }),
         });
 
@@ -619,20 +719,7 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
     }
   };
 
-  // Fetch data when session is authenticated
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session) {
-      signIn();
-    } else {
-      fetchData("beds", setBedData);
-      fetchData("blood", setBloodData);
-      fetchData("oxygen", setOxygenData);
-      fetchData("ambulance", setAmbulanceData);
-      fetchData("doctors", setDoctors);
-    }
-  }, [session, status]);
-
+  // ### JSX Structure
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900">
       <Sidebar
@@ -649,10 +736,14 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
       />
 
       <main
-        className={`transition-all duration-300 ${isCollapsed ? "ml-20" : "ml-64"} pt-20 p-8`}
+        className={`transition-all duration-300 ${
+          isCollapsed ? "ml-20" : "ml-64"
+        } pt-20 p-8`}
       >
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-gray-800">Hospital Command Center</h1>
+          <h1 className="text-3xl font-bold mb-8 text-gray-800">
+            Hospital Command Center
+          </h1>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -691,7 +782,9 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Active Doctors</p>
-                  <p className="text-2xl font-bold text-gray-800">{doctors.length}</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {doctors.length}
+                  </p>
                 </div>
               </div>
             </div>
@@ -703,7 +796,9 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Ambulances</p>
-                  <p className="text-2xl font-bold text-gray-800">{ambulanceData.total}</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {ambulanceData.total}
+                  </p>
                 </div>
               </div>
             </div>
@@ -720,7 +815,9 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 {emergencyAlerts.map((alert) => (
                   <div key={alert.id} className="p-4 bg-red-50 rounded-xl">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium text-red-700">{alert.type}</span>
+                      <span className="font-medium text-red-700">
+                        {alert.type}
+                      </span>
                       <span className="text-xs text-red-500">{alert.time}</span>
                     </div>
                     <p className="text-sm text-red-600">{alert.location}</p>
@@ -735,14 +832,11 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 <h2 className="text-xl font-semibold">Upcoming Appointments</h2>
               </div>
               <div className="space-y-4">
-                {appointments.map((appt) => (
-                  <div key={appt.id} className="p-4 bg-gray-50 rounded-xl">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-medium">{appt.patient}</span>
-                      <span className="text-xs text-gray-500">{appt.time}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{appt.department}</p>
-                  </div>
+                {appointments.map((appointment) => (
+                  <AppointmentCard
+                    key={appointment.id}
+                    appointment={appointment}
+                  />
                 ))}
               </div>
             </div>
@@ -750,13 +844,22 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-3 mb-5">
                 <Bell className="w-6 h-6 text-indigo-600" />
-                <h2 className="text-xl font-semibold">Hospital Announcements</h2>
+                <h2 className="text-xl font-semibold">
+                  Hospital Announcements
+                </h2>
               </div>
               <div className="space-y-4">
                 {announcements.map((announcement) => (
-                  <div key={announcement.id} className="p-4 bg-gray-50 rounded-xl">
-                    <h3 className="text-md font-bold text-gray-800">{announcement.title}</h3>
-                    <p className="text-sm text-gray-600">{announcement.message}</p>
+                  <div
+                    key={announcement.id}
+                    className="p-4 bg-gray-50 rounded-xl"
+                  >
+                    <h3 className="text-md font-bold text-gray-800">
+                      {announcement.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {announcement.message}
+                    </p>
                     <p className="text-xs text-gray-400">{announcement.date}</p>
                   </div>
                 ))}
@@ -800,10 +903,14 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 {doctors.map((doctor) => (
                   <div key={doctor.id} className="p-4 bg-gray-50 rounded-xl">
                     <h3 className="font-medium">{doctor.name}</h3>
-                    <p className="text-sm text-gray-600">{doctor.specialization}</p>
+                    <p className="text-sm text-gray-600">
+                      {doctor.specialization}
+                    </p>
                     <div className="flex items-center gap-2 mt-2">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-xs text-gray-500">{doctor.shift}</span>
+                      <span className="text-xs text-gray-500">
+                        {doctor.shift}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -823,7 +930,9 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
             className="bg-white p-6 rounded-2xl shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Manage Doctors</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+              Manage Doctors
+            </h2>
             <div className="flex justify-between mb-4">
               <button
                 onClick={() =>
@@ -852,21 +961,30 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                 <input
                   type="text"
                   value={editingDoctor.name}
-                  onChange={(e) => setEditingDoctor({ ...editingDoctor, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditingDoctor({ ...editingDoctor, name: e.target.value })
+                  }
                   placeholder="Name"
                   className="w-full p-2 mb-2 border border-gray-300 rounded-lg"
                 />
                 <input
                   type="text"
                   value={editingDoctor.specialization}
-                  onChange={(e) => setEditingDoctor({ ...editingDoctor, specialization: e.target.value })}
+                  onChange={(e) =>
+                    setEditingDoctor({
+                      ...editingDoctor,
+                      specialization: e.target.value,
+                    })
+                  }
                   placeholder="Specialization"
                   className="w-full p-2 mb-2 border border-gray-300 rounded-lg"
                 />
                 <input
                   type="text"
                   value={editingDoctor.shift}
-                  onChange={(e) => setEditingDoctor({ ...editingDoctor, shift: e.target.value })}
+                  onChange={(e) =>
+                    setEditingDoctor({ ...editingDoctor, shift: e.target.value })
+                  }
                   placeholder="Shift (e.g., 08:00 - 16:00)"
                   className="w-full p-2 mb-2 border border-gray-300 rounded-lg"
                 />
@@ -894,14 +1012,20 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                   doctor.name.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((doctor) => (
-                  <div key={doctor.id} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <div
+                    key={doctor.id}
+                    className="p-4 bg-gray-50 rounded-xl border border-gray-200"
+                  >
                     {editingDoctor?.id === doctor.id ? (
                       <div>
                         <input
                           type="text"
                           value={editingDoctor.name}
                           onChange={(e) =>
-                            setEditingDoctor({ ...editingDoctor, name: e.target.value })
+                            setEditingDoctor({
+                              ...editingDoctor,
+                              name: e.target.value,
+                            })
                           }
                           placeholder="Name"
                           className="w-full p-2 mb-2 border border-gray-300 rounded-lg"
@@ -922,7 +1046,10 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                           type="text"
                           value={editingDoctor.shift}
                           onChange={(e) =>
-                            setEditingDoctor({ ...editingDoctor, shift: e.target.value })
+                            setEditingDoctor({
+                              ...editingDoctor,
+                              shift: e.target.value,
+                            })
                           }
                           placeholder="Shift (e.g., 08:00 - 16:00)"
                           className="w-full p-2 mb-2 border border-gray-300 rounded-lg"
@@ -945,10 +1072,14 @@ const handleUpdateDoctor = async (updatedDoctor: Doctor) => {
                     ) : (
                       <div>
                         <h3 className="font-medium text-lg">{doctor.name}</h3>
-                        <p className="text-sm text-gray-600">{doctor.specialization}</p>
+                        <p className="text-sm text-gray-600">
+                          {doctor.specialization}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Clock className="w-4 h-4 text-gray-400" />
-                          <span className="text-xs text-gray-500">{doctor.shift}</span>
+                          <span className="text-xs text-gray-500">
+                            {doctor.shift}
+                          </span>
                         </div>
                         <div className="flex gap-2 mt-3">
                           <button
